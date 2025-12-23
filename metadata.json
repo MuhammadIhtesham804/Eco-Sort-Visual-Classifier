@@ -1,0 +1,7 @@
+{
+  "name": "Eco-Sort Visual Classifier",
+  "description": "An AI-powered visual sorting assistant for recycling facilities, helping workers classify waste using strict hazard, grease, and material rules.",
+  "requestFramePermissions": [
+    "camera"
+  ]
+}
