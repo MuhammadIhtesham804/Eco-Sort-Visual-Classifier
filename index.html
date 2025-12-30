@@ -1,0 +1,430 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Eco-Sort Visual Classifier</title>
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>♻️</text></svg>">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    :root {
+      --eco-green: #10b981;
+      --eco-blue: #0ea5b7;
+      --eco-teal: #06b6d4;
+    }
+    body {
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+      background: linear-gradient(135deg, #1a1f3a 0%, #0f1729 50%, #1a1f3a 100%);
+      color: #e6eef3;
+      min-height: 100vh;
+    }
+    .modal-enter {
+      transform: scale(0.9);
+      opacity: 0;
+    }
+    .modal-enter-active {
+      transform: scale(1);
+      opacity: 1;
+      transition: transform 0.28s cubic-bezier(0.2, 0.9, 0.2, 1), opacity 0.28s ease;
+    }
+    .pulse-slow {
+      animation: pulse 1.6s infinite;
+    }
+  </style>
+</head>
+<body class="min-h-screen flex flex-col items-center p-6 md:p-12">
+  <div class="w-full max-w-5xl">
+    <header class="flex items-center justify-between mb-8">
+      <div class="flex items-center gap-4">
+        <div class="w-14 h-14 rounded-xl bg-gradient-to-br from-emerald-400 via-cyan-400 to-sky-500 flex items-center justify-center shadow-lg">
+          <svg class="w-8 h-8" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden>
+            <path d="M3 12a9 9 0 1017.99-.2A9 9 0 003 12z" fill="white" opacity="0.06" />
+            <path d="M8 13.5L11 10l4 4.5" stroke="white" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" />
+          </svg>
+        </div>
+        <div>
+          <h1 class="text-2xl md:text-3xl font-extrabold leading-tight tracking-tight">Eco-Sort</h1>
+          <p class="text-xs text-emerald-300 uppercase tracking-wider">Visual Classifier • Facility Assistant</p>
+        </div>
+      </div>
+      <div class="flex items-center gap-3">
+        <label class="text-xs text-slate-300 mr-2">Language</label>
+        <select id="langSelect" class="bg-slate-800 border border-white/10 text-white px-3 py-2 rounded-lg text-sm">
+          <option value="en">English</option>
+          <option value="ur">اردو</option>
+          <option value="ar">العربية</option>
+        </select>
+      </div>
+    </header>
+
+    <main class="grid grid-cols-1 lg:grid-cols-12 gap-8">
+      <section class="lg:col-span-7 bg-slate-900/40 border border-white/5 rounded-2xl p-6 shadow-lg">
+        <div id="uploadArea" class="w-full border-2 border-dashed border-white/5 rounded-xl py-12 px-6 text-center transition-colors hover:border-emerald-400/40 cursor-pointer">
+          <input id="fileInput" type="file" accept="image/*" class="hidden" />
+          <div class="mx-auto max-w-md">
+            <p id="uploadTitle" class="text-lg font-bold mb-2"></p>
+            <p id="uploadSub" class="text-sm text-slate-400"></p>
+            <div class="mt-6 flex items-center justify-center gap-3">
+              <button id="chooseBtn" class="px-5 py-3 bg-emerald-500 hover:bg-emerald-600 rounded-lg text-white font-semibold shadow">Choose Image</button>
+              <button id="sampleBtn" class="px-4 py-3 bg-slate-700 hover:bg-slate-600 rounded-lg text-slate-200 text-sm">Try Sample</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="mt-6 flex flex-col md:flex-row gap-6 items-start">
+          <div class="w-full md:w-1/2 bg-slate-800/50 rounded-lg p-3">
+            <div class="w-full h-56 bg-black/40 rounded-md flex items-center justify-center overflow-hidden">
+              <img id="previewImg" src="" alt="Preview" class="object-contain max-h-full max-w-full opacity-0 transition-opacity" />
+              <div id="placeholder" class="text-slate-400 text-sm">No image selected</div>
+            </div>
+            <div class="mt-3 flex items-center justify-between text-xs text-slate-400">
+              <span id="fileName">—</span>
+              <span id="fileSize">—</span>
+            </div>
+          </div>
+
+          <div class="w-full md:w-1/2 space-y-4">
+            <div class="bg-slate-800/50 rounded-lg p-4">
+              <div class="flex items-center gap-3">
+                <div id="statusDot" class="w-4 h-4 rounded-full bg-emerald-400/60"></div>
+                <div>
+                  <p id="statusText" class="text-sm font-semibold">Ready</p>
+                  <p id="statusSub" class="text-xs text-slate-400">Awaiting image</p>
+                </div>
+              </div>
+            </div>
+
+            <div class="bg-slate-800/50 rounded-lg p-4">
+              <p class="text-xs text-slate-300 uppercase tracking-wider font-semibold mb-3">Quick Rules</p>
+              <ul class="text-sm text-slate-400 space-y-2">
+                <li class="flex items-start gap-3"><span class="font-bold text-red-400">Safety</span> Batteries, electronics, chemicals → Hazard</li>
+                <li class="flex items-start gap-3"><span class="font-bold text-yellow-400">Grease</span> Dirty cardboard/paper → Compost</li>
+                <li class="flex items-start gap-3"><span class="font-bold text-emerald-400">Standard</span> Clean bottles, cans, cardboard → Recycle</li>
+                <li class="flex items-start gap-3"><span class="font-bold text-slate-400">Default</span> Unknown / soft plastic → Trash</li>
+              </ul>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <aside class="lg:col-span-5 space-y-6">
+        <div class="bg-slate-900/40 border border-white/5 rounded-2xl p-6 shadow-lg">
+          <h3 class="text-lg font-bold mb-3">How Eco-Sort Works</h3>
+          <ol class="list-decimal list-inside space-y-3 text-sm text-slate-300">
+            <li>Upload a clear photo of the item.</li>
+            <li>Client-side classifier applies safety & material rules.</li>
+            <li>Receive color-coded disposal guidance instantly.</li>
+          </ol>
+        </div>
+        <div class="bg-slate-900/30 border border-white/5 rounded-2xl p-6 text-sm text-slate-300">
+          <p class="font-semibold mb-2">Accessibility</p>
+          <p>High-contrast badges, large text, and animated cues for fast recognition on factory floors.</p>
+        </div>
+        <footer class="mt-auto text-xs text-slate-400">
+          <p>Eco-Sort — Reduce contamination. Improve recycling accuracy.</p>
+        </footer>
+      </aside>
+    </main>
+  </div>
+
+  <div id="resultModal" class="fixed inset-0 z-[60] hidden items-center justify-center p-6">
+    <div class="absolute inset-0 bg-black/60 backdrop-blur-sm"></div>
+    <div id="modalCard" class="relative max-w-lg w-full bg-slate-900 border border-white/10 rounded-2xl overflow-hidden transform transition-transform duration-300">
+      <div class="p-6 flex items-center gap-4">
+        <div id="badge" class="w-16 h-16 rounded-lg flex items-center justify-center text-2xl text-white shadow-xl"></div>
+        <div>
+          <h2 id="modalLabel" class="text-2xl font-extrabold">Recycle</h2>
+          <p id="modalSub" class="text-xs text-slate-400 mt-1"></p>
+        </div>
+        <button id="closeModal" class="ml-auto text-slate-300 hover:text-white">Close ✕</button>
+      </div>
+      <div class="p-6 border-t border-white/5">
+        <div class="flex gap-4 items-start">
+          <div class="w-28 h-28 bg-black/30 rounded-md flex items-center justify-center overflow-hidden">
+            <img id="modalPreview" src="" alt="preview" class="object-contain max-w-full max-h-full" />
+          </div>
+          <div class="flex-1">
+            <p id="enExplanation" class="text-sm text-slate-300 mb-2"></p>
+            <p id="urExplanation" class="text-sm text-rose-100/90 mb-2"></p>
+            <p id="arExplanation" class="text-sm text-slate-200/80 mb-2"></p>
+            <div class="mt-3">
+              <div class="w-full bg-slate-700 h-2 rounded-full overflow-hidden">
+                <div id="confidenceFill" class="h-2 bg-emerald-400 w-0 transition-all"></div>
+              </div>
+              <p id="confidenceText" class="text-xs text-slate-400 mt-2"></p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <canvas id="analysisCanvas" class="hidden"></canvas>
+
+  <script>
+    (function () {
+      const fileInput = document.getElementById("fileInput");
+      const uploadArea = document.getElementById("uploadArea");
+      const chooseBtn = document.getElementById("chooseBtn");
+      const sampleBtn = document.getElementById("sampleBtn");
+      const previewImg = document.getElementById("previewImg");
+      const placeholder = document.getElementById("placeholder");
+      const fileNameEl = document.getElementById("fileName");
+      const fileSizeEl = document.getElementById("fileSize");
+      const statusDot = document.getElementById("statusDot");
+      const statusText = document.getElementById("statusText");
+      const statusSub = document.getElementById("statusSub");
+      const resultModal = document.getElementById("resultModal");
+      const modalCard = document.getElementById("modalCard");
+      const modalLabel = document.getElementById("modalLabel");
+      const modalSub = document.getElementById("modalSub");
+      const badge = document.getElementById("badge");
+      const modalPreview = document.getElementById("modalPreview");
+      const enExplanation = document.getElementById("enExplanation");
+      const urExplanation = document.getElementById("urExplanation");
+      const arExplanation = document.getElementById("arExplanation");
+      const confidenceFill = document.getElementById("confidenceFill");
+      const confidenceText = document.getElementById("confidenceText");
+      const closeModal = document.getElementById("closeModal");
+      const langSelect = document.getElementById("langSelect");
+      const canvas = document.getElementById("analysisCanvas");
+      const ctx = canvas.getContext("2d");
+
+      const TYPES = {
+        HAZARD: { color: "#ef4444", name: { en: "HAZARD", ur: "خطرہ", ar: "خطر" }, icon: "⚠️" },
+        COMPOST: { color: "#f59e0b", name: { en: "COMPOST", ur: "کھاد", ar: "سماد" }, icon: "🍃" },
+        RECYCLE: { color: "#10b981", name: { en: "RECYCLE", ur: "ری سائیکل", ar: "إعادة التدوير" }, icon: "♻️" },
+        TRASH: { color: "#64748b", name: { en: "TRASH", ur: "کوڑا", ar: "نفايات" }, icon: "🗑️" }
+      };
+
+      function getExplanations(type, itemName = "Item") {
+        switch (type) {
+          case "HAZARD":
+            return { en: `DANGER: ${itemName} identified as hazardous (batteries, electronics, or chemicals). Do NOT place in recycle or trash.`, ur: `خطرہ: ${itemName} کو خطرناک سمجھا گیا ہے (بیٹریاں، الیکٹرانکس، یا کیمیکلز). اسے ری سائیکل یا ٹریش میں نہ ڈالیں۔`, ar: `خطر: تم التعرف على ${itemName} كمواد خطرة (بطاريات أو إلكترونيات أو مواد كيميائية). لا تضعها في التدوير أو سلة المهملات.` };
+          case "COMPOST":
+            return { en: `CRITICAL: ${itemName} appears to have food stains or grease. Dispose in compost — do NOT recycle.`, ur: `اہم: ${itemName} پر کھانے کے داغ/چکنائی محسوس ہوئی۔ اسے کمپوسٹ میں ڈالیں — ری سائیکل نہ کریں۔`, ar: `حرج: يبدو أن ${itemName} بها بقع أو دهون طعام. تخلص منها في السماد — لا تعيد التدوير.` };
+          case "RECYCLE":
+            return { en: `Clean item: ${itemName} can be recycled. Rinse and place in the recycle stream.`, ur: `صاف چیز: ${itemName} کو ری سائیکل کیا جا سکتا ہے۔ دھو کر ری سائیکل میں ڈالیں۔`, ar: `عنصر نظيف: يمكن إعادة تدوير ${itemName}. اشطفه وضعه في سلة التدوير.` };
+          default:
+            return { en: `Unrecognizable item: ${itemName}. Dispose in trash if unsure. Soft plastics (wrappers) are trash.`, ur: `غیر معلوم چیز: ${itemName}. اگر غیر یقینی ہو تو اسے کوڑے میں ڈالیں۔ نرم پلاسٹک (ریپر) کوڑا ہے۔`, ar: `عنصر غير معروف: ${itemName}. إذا لم تكن متأكداً، تخلص منه في القمامة. الأكياس البلاستيكية الناعمة هي نفايات.` };
+        }
+      }
+
+      function formatBytes(bytes) {
+        if (bytes < 1024) return bytes + " B";
+        if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + " KB";
+        return (bytes / (1024 * 1024)).toFixed(2) + " MB";
+      }
+
+      uploadArea.addEventListener("dragover", (e) => {
+        e.preventDefault();
+        uploadArea.classList.add("border-emerald-400/40", "bg-slate-800/20");
+      });
+
+      uploadArea.addEventListener("dragleave", (e) => {
+        e.preventDefault();
+        uploadArea.classList.remove("border-emerald-400/40", "bg-slate-800/20");
+      });
+
+      uploadArea.addEventListener("drop", (e) => {
+        e.preventDefault();
+        uploadArea.classList.remove("border-emerald-400/40", "bg-slate-800/20");
+        const file = e.dataTransfer.files && e.dataTransfer.files[0];
+        if (file) handleFile(file);
+      });
+
+      chooseBtn.addEventListener("click", () => fileInput.click());
+
+      fileInput.addEventListener("change", (e) => {
+        const file = e.target.files && e.target.files[0];
+        if (file) handleFile(file);
+        fileInput.value = "";
+      });
+
+      sampleBtn.addEventListener("click", () => {
+        const sampleCanvas = document.createElement("canvas");
+        sampleCanvas.width = 600;
+        sampleCanvas.height = 400;
+        const sctx = sampleCanvas.getContext("2d");
+        sctx.fillStyle = "#caa97a";
+        sctx.fillRect(0, 0, 600, 400);
+        sctx.fillStyle = "rgba(120, 70, 30, 0.55)";
+        sctx.beginPath();
+        sctx.ellipse(360, 220, 120, 70, 0, 0, 2 * Math.PI);
+        sctx.fill();
+        sampleCanvas.toBlob((b) => {
+          const file = new File([b], "greasy_box.jpg", { type: "image/jpeg" });
+          handleFile(file);
+        }, "image/jpeg", 0.9);
+      });
+
+      async function handleFile(file) {
+        fileNameEl.textContent = file.name || "—";
+        fileSizeEl.textContent = formatBytes(file.size);
+        placeholder.style.display = "none";
+        previewImg.style.opacity = 0;
+        previewImg.src = URL.createObjectURL(file);
+        previewImg.onload = () => {
+          previewImg.style.opacity = 1;
+          analyzeImage(previewImg, file.name);
+        };
+        statusDot.style.backgroundColor = "#f59e0b";
+        statusText.textContent = getText("Analyzing...");
+        statusSub.textContent = getText("Running visual rules");
+      }
+
+      function getLang() {
+        return langSelect.value || "en";
+      }
+
+      function getText(enText, urText, arText) {
+        const lang = getLang();
+        if (lang === "ur") return urText || enText;
+        if (lang === "ar") return arText || enText;
+        return enText;
+      }
+
+      langSelect.addEventListener("change", () => {
+        document.getElementById("uploadTitle").textContent = getText("Upload or drag an image", "تصویر اپ لوڈ کریں", "قم بتحميل صورة");
+        document.getElementById("uploadSub").textContent = getText("Take a clear photo of the waste item on the conveyor or select an image file.", "فضلہ کی چیز کی واضح تصویر لیں۔", "التقط صورة واضحة لعنصر النفايات على الحزام ناقل الحركة");
+      });
+
+      async function analyzeImage(imgEl, originalName = "") {
+        statusDot.style.backgroundColor = "#f59e0b";
+        statusText.textContent = getText("Analyzing...");
+        statusSub.textContent = getText("Applying rules");
+
+        const MAX_DIM = 400;
+        let w = imgEl.naturalWidth || imgEl.width;
+        let h = imgEl.naturalHeight || imgEl.height;
+        if (!w || !h) { w = 400; h = 300; }
+
+        const scale = Math.min(1, MAX_DIM / Math.max(w, h));
+        const cw = Math.max(64, Math.round(w * scale));
+        const ch = Math.max(64, Math.round(h * scale));
+
+        canvas.width = cw;
+        canvas.height = ch;
+        ctx.clearRect(0, 0, cw, ch);
+        ctx.drawImage(imgEl, 0, 0, cw, ch);
+
+        let imgData;
+        try {
+          imgData = ctx.getImageData(0, 0, cw, ch);
+        } catch (e) {
+          const result = decideByFilename(originalName);
+          return showResult(result, imgEl.src, 0.75);
+        }
+
+        const pixels = imgData.data;
+        const total = cw * ch;
+        let brownCount = 0, grayCount = 0, brightSpecCount = 0;
+
+        for (let i = 0; i < pixels.length; i += 24) {
+          const r = pixels[i], g = pixels[i + 1], b = pixels[i + 2];
+          if (r > 110 && g > 60 && b < 110 && r - g > 20) brownCount++;
+          if (Math.abs(r - g) < 12 && Math.abs(r - b) < 12 && (r + g + b) / 3 > 60 && (r + g + b) / 3 < 200) grayCount++;
+          if (r > 220 && g > 220 && b > 220) brightSpecCount++;
+        }
+
+        const brownRatio = brownCount / (total / 6);
+        const grayRatio = grayCount / (total / 6);
+        const specRatio = brightSpecCount / (total / 6);
+        const fname = (originalName || "").toLowerCase();
+
+        const hazardKeywords = ["battery", "batt", "aa", "aaa", "cell", "phone", "mobile", "lithium", "lipo", "lith", "battery-pack", "battery pack", "electronic", "electronics", "pcb", "circuit", "charger", "adapter", "chemical", "acid", "solvent", "paint", "pesticide"];
+        for (const k of hazardKeywords) if (fname.includes(k)) return showResult({ type: "HAZARD", confidence: 0.98, itemName: inferName(fname) }, imgEl.src);
+
+        if (grayRatio > 0.12 && specRatio > 0.03) return showResult({ type: "HAZARD", confidence: Math.min(0.92, 0.6 + grayRatio), itemName: inferName(fname) }, imgEl.src);
+
+        const greasyKeywords = ["pizza", "greasy", "grease", "cardboard", "box", "pizza-box", "takeaway", "take-out"];
+        for (const k of greasyKeywords) if (fname.includes(k) && brownRatio > 0.01) return showResult({ type: "COMPOST", confidence: Math.min(0.95, 0.6 + brownRatio), itemName: inferName(fname) }, imgEl.src);
+
+        if (brownRatio > 0.035) return showResult({ type: "COMPOST", confidence: Math.min(0.94, 0.5 + 3 * brownRatio), itemName: inferName(fname) }, imgEl.src);
+
+        const recycleKeywords = ["bottle", "bottles", "can", "cans", "tin", "cardboard", "box", "jar", "container", "plastic", "recyclable", "paper"];
+        for (const k of recycleKeywords) if (fname.includes(k)) { if (k.includes("cardboard") && brownRatio > 0.03) continue; return showResult({ type: "RECYCLE", confidence: 0.9, itemName: inferName(fname) }, imgEl.src); }
+
+        if (specRatio > 0.04 && brownRatio < 0.02) return showResult({ type: "RECYCLE", confidence: 0.78, itemName: inferName(fname) }, imgEl.src);
+
+        return showResult({ type: "TRASH", confidence: 0.7, itemName: inferName(fname) }, imgEl.src);
+      }
+
+      function inferName(fname) {
+        if (!fname) return "Item";
+        const parts = fname.split(/[\s_\-\.]+/).slice(0, 3).filter(Boolean);
+        if (parts.length === 0) return "Item";
+        return parts.map((p) => p.replace(/\d+/g, "")).join(" ").slice(0, 30) || "Item";
+      }
+
+      function decideByFilename(fname) {
+        fname = (fname || "").toLowerCase();
+        for (const k of ["battery", "phone", "lithium", "chemical", "acid", "paint"]) if (fname.includes(k)) return { type: "HAZARD", confidence: 0.9, itemName: inferName(fname) };
+        for (const k of ["pizza", "greasy", "grease", "cardboard"]) if (fname.includes(k)) return { type: "COMPOST", confidence: 0.8, itemName: inferName(fname) };
+        for (const k of ["bottle", "can", "cardboard", "plastic"]) if (fname.includes(k)) return { type: "RECYCLE", confidence: 0.8, itemName: inferName(fname) };
+        return { type: "TRASH", confidence: 0.6, itemName: inferName(fname) };
+      }
+
+      function showResult(result, imageSrc, forcedConfidence) {
+        const type = TYPES[result.type] ? "" + result.type : "TRASH";
+        const tpl = TYPES[type];
+        const lang = getLang();
+        const explanations = getExplanations(type, result.itemName || "Item");
+        const conf = typeof forcedConfidence === "number" ? forcedConfidence : result.confidence || 0.75;
+
+        modalLabel.textContent = tpl.name[lang] || tpl.name.en;
+        modalSub.textContent = lang === "ur" ? "تجویز" : lang === "ar" ? "توصية" : "Disposal recommendation";
+        badge.style.background = tpl.color;
+        badge.textContent = tpl.icon;
+        if (type === "HAZARD") badge.classList.add("pulse-slow"); else badge.classList.remove("pulse-slow");
+
+        enExplanation.textContent = explanations.en;
+        urExplanation.textContent = explanations.ur;
+        arExplanation.textContent = explanations.ar;
+        modalPreview.src = imageSrc;
+        confidenceFill.style.width = Math.round(conf * 100) + "%";
+        confidenceFill.style.background = tpl.color;
+        confidenceText.textContent = Math.round(conf * 100) + "% confidence";
+        modalCard.style.boxShadow = `0 10px 40px ${hexToRgba(tpl.color, 0.18)}`;
+        modalCard.style.borderColor = hexToRgba(tpl.color, 0.18);
+
+        resultModal.classList.remove("hidden");
+        resultModal.style.display = "flex";
+        modalCard.classList.add("modal-enter");
+        setTimeout(() => { modalCard.classList.add("modal-enter-active"); }, 8);
+
+        statusDot.style.backgroundColor = tpl.color;
+        statusText.textContent = tpl.name[lang] || tpl.name.en;
+        statusSub.textContent = lang === "ur" ? explanations.ur : lang === "ar" ? explanations.ar : explanations.en;
+      }
+
+      function closeResult() {
+        modalCard.classList.remove("modal-enter-active");
+        modalCard.classList.add("modal-enter");
+        setTimeout(() => {
+          resultModal.style.display = "none";
+          resultModal.classList.add("hidden");
+          modalCard.classList.remove("modal-enter");
+        }, 260);
+      }
+
+      function hexToRgba(hex, alpha = 1) {
+        const h = hex.replace("#", "");
+        const bigint = parseInt(h, 16);
+        const r = (bigint >> 16) & 255;
+        const g = (bigint >> 8) & 255;
+        const b = bigint & 255;
+        return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+      }
+
+      closeModal.addEventListener("click", closeResult);
+      document.addEventListener("keydown", (e) => { if (e.key === "Escape") closeResult(); });
+
+      document.getElementById("uploadTitle").textContent = getText("Upload or drag an image", "تصویر اپ لوڈ کریں", "قم بتحميل صورة");
+      document.getElementById("uploadSub").textContent = getText("Take a clear photo of the waste item on the conveyor or select an image file.", "فضلہ کی چیز کی واضح تصویر لیں۔", "التقط صورة واضحة لعنصر النفايات على الحزام الناقل");
+    })();
+  </script>
+</body>
+</html>
