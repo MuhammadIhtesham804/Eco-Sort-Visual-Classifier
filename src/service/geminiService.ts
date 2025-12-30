@@ -1,6 +1,6 @@
 import { ClassificationResult, DisposalType } from '../types';
 
-export async function classifyImage(base64: string): Promise<ClassificationResult> {
+export async function classifyImage(_base64: string): Promise<ClassificationResult> {
   // TODO: Integrate actual Gemini API call here
   return {
     type: DisposalType.TRASH,
