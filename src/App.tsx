@@ -13,6 +13,23 @@ const App: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [lang, setLang] = useState<Language>('en');
 
+  const getErrorMessage = (err: unknown): string => {
+    const errorStr = String(err);
+    if (errorStr.includes('API key') || errorStr.includes('401') || errorStr.includes('authentication')) {
+      return lang === 'ur' ? "API کلید درست نہیں ہے۔ براہ کرم .env.local میں VITE_GEMINI_API_KEY سیٹ کریں" : 
+             lang === 'ar' ? "مفتاح API غير صحيح. يرجى تعيين VITE_GEMINI_API_KEY في .env.local" :
+             "Invalid API key. Please set VITE_GEMINI_API_KEY in .env.local";
+    }
+    if (errorStr.includes('network') || errorStr.includes('fetch')) {
+      return lang === 'ur' ? "انٹرنیٹ کنکشن میں مسئلہ۔ براہ کرم دوبارہ کوشش کریں۔" : 
+             lang === 'ar' ? "مشكلة في الاتصال. حاول مرة أخرى." :
+             "Network error. Please check your connection and retry.";
+    }
+    return lang === 'ur' ? "تجزیہ ناکام ہو گیا۔ دوبارہ کوشش کریں۔" : 
+           lang === 'ar' ? "فشل التحليل. حاول مرة أخرى." :
+           "System analysis failed. Please verify connection and retry.";
+  };
+
   const handleImageSelected = useCallback(async (base64: string) => {
     setIsAnalyzing(true);
     setError(null);
@@ -22,10 +39,8 @@ const App: React.FC = () => {
       const classification = await classifyImage(base64);
       setResult(classification);
     } catch (err) {
-      console.error(err);
-      setError(lang === 'ur' ? "تجزیہ ناکام ہو گیا۔ دوبارہ کوشش کریں۔" : 
-            lang === 'ar' ? "فشل التحليل. حاول مرة أخرى." :
-            "System analysis failed. Please verify connection and retry.");
+      console.error('Classification error:', err);
+      setError(getErrorMessage(err));
     } finally {
       setIsAnalyzing(false);
     }
